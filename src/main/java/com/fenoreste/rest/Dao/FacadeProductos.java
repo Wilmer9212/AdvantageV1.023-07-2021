@@ -13,8 +13,6 @@ import javax.persistence.Query;
 public abstract class FacadeProductos<T> {
   private static EntityManagerFactory emf;
   
-  private static final String PERSISTENCE_UNIT_NAME = "conexion";
-  
   public FacadeProductos(Class<T> entityClass) {
     emf = AbstractFacade.conexion();
   }
@@ -42,8 +40,9 @@ public abstract class FacadeProductos<T> {
       } 
       System.out.println("ListaProd:" + ListagetP.size());
     } catch (Exception e) {
-      cerrar();
+      em.close();
     } 
+    em.close();
     return ListagetP;
   }
   
@@ -75,6 +74,28 @@ public abstract class FacadeProductos<T> {
     } 
     return listaString;
   }
+  
+   
+  public boolean productRates(String accountType, String productCode) {
+    EntityManager em = emf.createEntityManager();
+      System.out.println("AccountType:"+accountType+",ProductCode:"+productCode);
+    try {
+      String consulta = "SELECT count(*) FROM auxiliares a INNER JOIN tipos_cuenta_siscoop tps USING(idproducto) WHERE upper(tps.producttypename) LIKE '%" + accountType.toUpperCase() + "%' AND tps.idproducto=" + productCode;
+      System.out.println("Consulta:" + consulta);
+      Query query = em.createNativeQuery(consulta);
+      int c=Integer.parseInt(String.valueOf(query.getSingleResult()));
+      if(c>0){
+          return true;
+      }
+      else{
+          return false;
+      }
+    } catch (Exception e) {
+      System.out.println("Error al buscar tasa de productos:" + e.getMessage());
+    } 
+    return false;
+  }
+  
   
   public void cerrar() {
     emf.close();

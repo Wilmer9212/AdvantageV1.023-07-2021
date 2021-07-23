@@ -38,7 +38,6 @@ public abstract class FacadeCustomer<T> {
 
     public List<CustomerSearchDTO> search(String ogs) {
         EntityManager em = emf.createEntityManager();
-        System.out.println("Lllego a buscar");
         List<CustomerSearchDTO> listaC = new ArrayList<CustomerSearchDTO>();
         CustomerSearchDTO client = null;
         try {
@@ -71,10 +70,11 @@ public abstract class FacadeCustomer<T> {
 
             return listaC;
         } catch (Exception e) {
+            em.close();
             System.out.println("Error al buscar cliente:" + e.getMessage());
-            cerrar();
+           
         }
-
+         em.close();
         return null;
     }
 
@@ -86,15 +86,11 @@ public abstract class FacadeCustomer<T> {
             int o = Integer.parseInt(ogs.substring(0, 6));
             int g = Integer.parseInt(ogs.substring(6, 8));
             int s = Integer.parseInt(ogs.substring(8, 14));
-            System.out.println("ogs:" + o + "" + g + "" + s);
             PersonasPK pk = new PersonasPK(o, g, s);
             Persona p = em.find(Persona.class, pk);
-
             String customerId = ogs;
             String name = "", customerType = "";
-
             name = p.getNombre() + " " + p.getAppaterno() + " " + p.getApmaterno();
-
             if (p.getRazonSocial() == null) {
                 customerType = "individual";
             } else {
@@ -104,14 +100,13 @@ public abstract class FacadeCustomer<T> {
                     customerId,
                     name,
                     "individual");
-
-            System.out.println("cliente:" + client);
             return client;
         } catch (Exception e) {
             System.out.println("Error al buscar cliente:" + e.getMessage());
-            cerrar();
+            em.close();
         }
-
+        em.close();
+    
         return null;
     }
 
@@ -131,25 +126,15 @@ public abstract class FacadeCustomer<T> {
             int o = Integer.parseInt(ogs.substring(0, 6));
             int g = Integer.parseInt(ogs.substring(6, 8));
             int s = Integer.parseInt(ogs.substring(8, 14));
-            System.out.println("ogs:" + o + "" + g + "" + s);
             PersonasPK pk = new PersonasPK(o, g, s);
             Persona p = em.find(Persona.class, pk);
-
-            /*query = em.createNativeQuery(consulta);
-            ListaObjetos = query.getResultList();
-            System.out.println("Size:" + ListaObjetos.size());
-            for (Object[] obj : ListaObjetos) {
-                System.out.println("Ok:" + obj[0].toString());
-                if (!obj[0].toString().equals("0")) {*/
             if (p.getTelefono() != null) {
-                System.out.println("Entro");
                 contactsPhone.setCustomerContactId(ogs);
                 contactsPhone.setCustomerContactType("phone");
                 contactsPhone.setPhoneNumber("521"+p.getTelefono());
                 ListaContactos.add(contactsPhone);
 
             }
-            //if (!obj[1].toString().equals("0")) {
             if (p.getCelular() != null) {
                 contactsCellphone.setCustomerContactId(ogs);
                 contactsCellphone.setCustomerContactType("phone");
@@ -163,14 +148,12 @@ public abstract class FacadeCustomer<T> {
 
                 ListaContactos.add(contactsEmail);
             }
-
-            System.out.println("ListaContactos:" + ListaContactos);
-
-           
         } catch (Exception e) {
+            em.close();
             System.out.println("Error al obtener detalles del socio:" + e.getMessage());
            
         }
+        em.close();
 
         return ListaContactos;
     }
@@ -182,7 +165,6 @@ public abstract class FacadeCustomer<T> {
         String consulta = "SELECT * FROM auxiliares a INNER JOIN tipos_cuenta_siscoop tp USING(idproducto) WHERE replace((to_char(idorigen,'099999')||to_char(idgrupo,'09')||to_char(idsocio,'099999')),' ','')='" + customerId + "' AND estatus=2";
         CustomerAccountDTO producto = new CustomerAccountDTO();
         try {
-
             query = em.createNativeQuery(consulta, Auxiliares.class);
             List<Auxiliares> ListaProd = query.getResultList();
             String status = "";
@@ -190,9 +172,7 @@ public abstract class FacadeCustomer<T> {
             Object[] arr = {};
             Object[] arr1 = {"relationCode", "SOW"};
             List<CustomerAccountDTO> listaDeCuentas = new ArrayList<CustomerAccountDTO>();
-
-            int idproducto = 0;
-            int prod = 0;
+            
             for (int k = 0; k < 1; k++) {
                 for (int i = 0; i < ListaProd.size(); i++) {
                     Auxiliares a = ListaProd.get(i);
@@ -204,8 +184,8 @@ public abstract class FacadeCustomer<T> {
                             accountType="TIME";
                         }
                     } catch (Exception e) {
+                        System.out.println("Error producido:"+e.getMessage());
                     }
-
                     if (a.getEstatus() == 2) {
                         status = "OPEN";
                     } else if (a.getEstatus() == 3) {
@@ -237,15 +217,13 @@ public abstract class FacadeCustomer<T> {
                     accountType = "";
                 }
             }
-            System.out.println("Lista de cuentas:" + listaDeCuentas);
             return listaDeCuentas;
 
         } catch (Exception e) {
-
+            em.close();
             System.out.println("Error al obtener cuentas:" + e.getMessage());
-        } finally {
-            em.clear();
         }
+        em.close();
         return null;
     }
 
@@ -333,6 +311,8 @@ public abstract class FacadeCustomer<T> {
     public Double[] position(String customerId) {
         EntityManager em = emf.createEntityManager();
         Double ledGer=0.0,avalaible=0.0;
+        double saldo_congelado_ahorros=0.0;
+                double saldo_disponible_ahorros=0.0;
         try {
             String c = "SELECT * FROM auxiliares a"
                     + " INNER JOIN productos pr USING(idproducto)"
@@ -355,7 +335,12 @@ public abstract class FacadeCustomer<T> {
                 Double garantiaAhorro=0.0;
                 Double saldoAvalaibleAhorro=0.0;
                 Double saldoLedgerAhorro=0.0;
+                
+                 double saldo_congelado=0.0;
+                    double saldo_disponible=0.0;
                 if (pr.getTipoproducto() == 1) {
+                    System.out.println("Entroooo:");
+                    System.out.println("Es una inversion");
                     //Se suma fechaactivacion mas plazos para determinar si el producto ya se puede cobrar o aun no
                     String cc = "SELECT a.fechaactivacion + " + Integer.parseInt(String.valueOf(a.getPlazo())) + " FROM auxiliares a WHERE a.idorigenp="
                             + a.getAuxiliaresPK().getIdorigenp()
@@ -379,16 +364,19 @@ public abstract class FacadeCustomer<T> {
                 }
                   
                 }else if(pr.getTipoproducto()==0){
-                saldoLedgerAhorro=saldoLedgerAhorro+Double.parseDouble(a.getSaldo().toString());
-                if(Double.parseDouble(a.getGarantia().toString())>0){                        
-                 garantiaAhorro= garantiaAhorro+Double.parseDouble(a.getGarantia().toString());
-                 saldoAvalaibleAhorro=saldoAvalaibleAhorro+ (Double.parseDouble(a.getSaldo().toString())-garantiaAhorro);
+                double saldodis=Double.parseDouble(a.getSaldo().toString());
+                double saldoblok=0.0;
+                if(Double.parseDouble(a.getGarantia().toString())>0){    
+                   double garantia=Double.parseDouble(a.getGarantia().toString());
+                    System.out.println("Garantia:"+garantia);
+                saldo_congelado=saldo_congelado+garantia;
                 }else{
-                 saldoAvalaibleAhorro=saldoAvalaibleAhorro+Double.parseDouble(a.getSaldo().toString());
+                saldo_disponible=saldo_disponible+saldodis;
                 }
               }
-              ledGer=ledGer+(saldoLedgerDPF+saldoLedgerAhorro);
-              avalaible=avalaible+(saldoAvalaibleDPF+saldoAvalaibleAhorro);
+              saldo_congelado_ahorros=saldo_congelado_ahorros+saldo_congelado;
+              saldo_disponible_ahorros=saldo_disponible_ahorros+saldo_disponible;
+              
             }          
            
            } catch (Exception e) {
@@ -396,8 +384,8 @@ public abstract class FacadeCustomer<T> {
             System.out.println("Error:" + e.getMessage());
         }
         Double saldos[]=new Double[2];
-        saldos[0]=ledGer;
-        saldos[1]=avalaible;
+        saldos[0]=saldo_congelado_ahorros;
+        saldos[1]=saldo_disponible_ahorros;
         System.out.println("Saldos:"+saldos[1]);
         return saldos;
     }

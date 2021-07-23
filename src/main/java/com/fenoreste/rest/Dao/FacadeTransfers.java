@@ -44,7 +44,7 @@ public abstract class FacadeTransfers<T> {
             String propcuentadestino,
             String fechaejecucion,
             String tipoejecucion) {
-
+        System.out.println("montoooooooooooooooooooooooooooooooooooooooo en facade:"+montoTransferencia);
         boolean bandera = false;
         Calendar c1 = Calendar.getInstance();
         String dia = Integer.toString(c1.get(Calendar.DATE));
@@ -84,6 +84,27 @@ public abstract class FacadeTransfers<T> {
                         tr.commit();
                         bandera = true;
                     }
+                }else if(tipotransferencia.toUpperCase().contains("INTRA")){
+                   if (findAccount(cuentaorigen, customerId)) {
+                        EntityTransaction tr = em.getTransaction();
+                        tr.begin();
+                        validaciones_transferencias_siscoop vl = new validaciones_transferencias_siscoop();
+                        vl.setCuentaorigen(cuentaorigen);
+                        vl.setCuentadestino(cuentadestino);
+                        vl.setTipotransferencia(tipotransferencia);
+                        vl.setComentario1(comentario);
+                        vl.setComentario2(propcuentadestino);
+                        vl.setCustomerId(customerId);
+                        vl.setFechaejecucion(hoy);
+                        vl.setMonto(montoTransferencia);
+                        vl.setTipoejecucion(tipoejecucion);
+                        vl.setEstatus(false);
+                        vl.setValidationId(validationId);
+                        
+                        em.persist(vl);
+                        tr.commit();
+                        bandera = true;
+                    } 
                 }
             }
 
@@ -115,8 +136,10 @@ public abstract class FacadeTransfers<T> {
             String fe=String.valueOf(queryf.getSingleResult()).replace("-","/");
             System.out.println("fe:"+fe);
             Date hoy=stringToDate(fe);
+            Query query1=em.createNativeQuery("SELECT saldo FROM auxiliares a where replace(to_char(a.idorigenp,'099999')||to_char(a.idproducto,'09999')||to_char(idauxiliar,'09999999'),' ','')='" + vlt.getCuentaorigen()+"'");
+            Double saldo=Double.parseDouble(String.valueOf(query.getSingleResult()));
             
-            System.out.println("hoy:"+hoy);
+            System.out.println("hoy:");
             if (findBalance(vlt.getCuentaorigen(), vlt.getMonto())) {
                 EntityTransaction tr = em.getTransaction();
                 tr.begin();
@@ -131,6 +154,7 @@ public abstract class FacadeTransfers<T> {
                 vl.setMonto(vlt.getMonto());
                 vl.setTipoejecucion(vlt.getTipoejecucion());
                 vl.setEstatus(true);
+                vl.setRunningBalance(saldo);
                 em.persist(vl);
                 tr.commit();
                 bandera = true;

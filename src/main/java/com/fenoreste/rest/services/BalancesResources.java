@@ -2,9 +2,11 @@ package com.fenoreste.rest.services;
 
 import com.fenoreste.rest.Auth.Security;
 import com.fenoreste.rest.Dao.BalanceDAO;
+import com.fenoreste.rest.ResponseDTO.BalancesDTO;
 import com.github.cliftonlabs.json_simple.JsonObject;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
-import java.util.List;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonValue;
@@ -25,50 +27,57 @@ public class BalancesResources {
   @Consumes({MediaType.APPLICATION_JSON})
   public Response balances(String cadena,@HeaderParam("authorization") String authString){
     Security scr=new Security();
+      System.out.println("Requestttttt Balanceeeee:"+cadena);
      if(!scr.isUserAuthenticated(authString)){
             return Response.status(Response.Status.UNAUTHORIZED).build();
      }
-    JsonObject datosOk = new JsonObject();
-    JsonObject datosError = new JsonObject();
+     JsonObject datosError = new JsonObject();
     JSONObject datosEntrada = new JSONObject(cadena);
-    String customerId = "", balanceLedger = "", balanceAvalaible = "";
-    String fecha1 = "", fecha2 = "";
     BalanceDAO dao = new BalanceDAO();
     javax.json.JsonObject json1 = null;
     JsonArrayBuilder jsona = Json.createArrayBuilder();
-    List<String> accountsId = new ArrayList<String>();
     try {
-      JSONArray accounts = datosEntrada.getJSONArray("accounts");
-      for (int i = 0; i < accounts.length(); i++) {
-        JSONObject auxJson = accounts.getJSONObject(i);
-        String accountId = auxJson.getString("accountId");
-        System.out.println("AccountId:" + accountId);
-        accountsId.add(accountId);
-      } 
-        System.out.println("CcountID:"+accountsId);
-      String[] arr = dao.balances(accountsId);
-        System.out.println("arr[0]:"+arr[0]+", arr[1]:"+arr[1]+",arr[2]:"+arr[2]);
-        if(arr[1]==null){
-            arr[1]="0";
-        }
         
-        if(arr[2]==null){
-            
-            arr[2]="0";
-        }
-        System.out.println("arr2"+arr[2]);
-      javax.json.JsonObject clientes1 = Json.createObjectBuilder().add("balanceType", "ledger").add("amount", (JsonValue)Json.createObjectBuilder().add("amount", arr[1]).add("currencyCode", "MXN").build()).build();
-        System.out.println("clientes1:"+clientes1);
-      javax.json.JsonObject clientes2 = Json.createObjectBuilder().add("balanceType", "available").add("amount", (JsonValue)Json.createObjectBuilder().add("amount", arr[2]).add("currencyCode", "MXN").build()).build();
+      JSONArray accounts = datosEntrada.getJSONArray("accounts");
+      String[]arrc=new String[accounts.length()];
+      for(int i=0;i<accounts.length();i++){
+      String accountId=accounts.getJSONObject(i).getString("accountId");
+      arrc[i]=accountId;
+      }
+      ArrayList<BalancesDTO> arr = dao.balances(arrc);    
+      for(int x=0;x<arr.size();x++){
+          BalancesDTO balance=arr.get(x);
+          System.out.println("dtoB:"+balance);
+          javax.json.JsonObject clientes1 = Json.createObjectBuilder().add("balanceType", "ledger")
+                                                                       .add("amount", (JsonValue)Json.createObjectBuilder()
+                                                                                                      .add("amount",balance.getLedger())//formato1.format(dtoB[0]))
+                                                                                                      .add("currencyCode", "MXN")
+                                                                                                      .build())
+                                                                        .build();
+          javax.json.JsonObject clientes2 = Json.createObjectBuilder().add("balanceType", "available")
+                                                                      .add("amount", (JsonValue)Json.createObjectBuilder()
+                                                                                                    .add("amount",balance.getAvalaible()) //formato1.format(arr[1]))
+                                                                                                    .add("currencyCode", "MXN").build())
+                                                                      .build();
+          
+           jsona.add(Json.createObjectBuilder().add("accountId", balance.getAccountId()).add("balances", Json.createArrayBuilder().add((JsonValue)clientes1).add((JsonValue)clientes2)));
+          
+      }
+      DecimalFormatSymbols separadoresPersonalizados = new DecimalFormatSymbols();
+      separadoresPersonalizados.setDecimalSeparator('.');
+      DecimalFormat formato1 = new DecimalFormat("0.00", separadoresPersonalizados);      
+      //javax.json.JsonObject clientes1 = Json.createObjectBuilder().add("balanceType", "ledger").add("amount", (JsonValue)Json.createObjectBuilder().add("amount",formato1.format(arr[0])).add("currencyCode", "MXN").build()).build();
+      //javax.json.JsonObject clientes2 = Json.createObjectBuilder().add("balanceType", "available").add("amount", (JsonValue)Json.createObjectBuilder().add("amount", formato1.format(arr[1])).add("currencyCode", "MXN").build()).build();
+      json1 = Json.createObjectBuilder().add("balances",jsona).build();
       
-      json1 = Json.createObjectBuilder().add("balances", jsona.add(Json.createObjectBuilder().add("accountId", arr[0]).add("balances", Json.createArrayBuilder().add((JsonValue)clientes1).add((JsonValue)clientes2)))).build();
-  
       return Response.status(Response.Status.OK).entity(json1).build();
     } catch (Exception e) {
       datosError.put("Error:", "Request Json Failed");
       System.out.println("Error:" + e.getMessage());
        return Response.status(Response.Status.BAD_GATEWAY).entity(datosError).build();
-    } 
+    } finally{
+        dao.cerrar();
+    }
    }
  }
 

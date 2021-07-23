@@ -25,7 +25,7 @@ import org.json.JSONObject;
 @Path("/api/timedeposit")
 public class TimeResources {
   
-    @POST
+     @POST
     @Path("/create/validate")
     @Produces({MediaType.APPLICATION_JSON})
     @Consumes({MediaType.APPLICATION_JSON})
@@ -42,13 +42,13 @@ public class TimeResources {
             String dia = Integer.toString(c1.get(5));
             String mes = Integer.toString(c1.get(2) + 1);
             String annio = Integer.toString(c1.get(1));
-            String BusinessDate = dia + "/" + mes + "/" + annio;
+            String BusinessDate = String.format("%04d",Integer.parseInt(annio)) +"-" + String.format("%02d",Integer.parseInt(mes)) + "-" + String.format("%02d",Integer.parseInt(dia));
             javax.json.JsonObject found = Json.createObjectBuilder()
                     .add("validationId", "0988888")
                     .add("fees", Json.createArrayBuilder())
-                    .add("executionDate", BusinessDate.replace("/","-"))
-                    .add("interestRate", 5)
-                    .add("maturityDate", BusinessDate.replace("/","-"))
+                    .add("executionDate", BusinessDate)
+                    .add("interestRate", 5.00)
+                    .add("maturityDate", BusinessDate)
                     .build();
             return Response.status(Response.Status.OK).entity(found).build();
         } catch (Exception e) {
@@ -73,12 +73,15 @@ public class TimeResources {
         AccountsDAO dao = new AccountsDAO();
         JSONObject jsonRecibido = new JSONObject(cadena);
         try {
+            Calendar c1 = Calendar.getInstance();
+            String dia = Integer.toString(c1.get(5));
+            String mes = Integer.toString(c1.get(2) + 1);
+            String annio = Integer.toString(c1.get(1));
+            String BusinessDate = String.format("%04d",Integer.parseInt(annio)) +"-" + String.format("%02d",Integer.parseInt(mes)) + "-" + String.format("%02d",Integer.parseInt(dia));
             String dt = null;
             javax.json.JsonObject found = Json.createObjectBuilder()
-                    .add("warnings", "")
                     .add("status", "completed")
                     .add("executionId", "ABCDEFGHISDFSFS")
-                    .add("maturityDate", "")
                     .add("accountId", "668344374")
                     .add("accountNumber", "6464564645")
                     .add("displayAccountNumber", "345734983")

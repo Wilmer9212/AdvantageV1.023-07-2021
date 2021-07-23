@@ -3,9 +3,7 @@ package com.fenoreste.rest.services;
 
 import com.fenoreste.rest.Auth.Security;
 import com.fenoreste.rest.Dao.AlertsDAO;
-import javax.json.Json;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -21,23 +19,18 @@ import org.json.JSONObject;
 @Path("api/alert")
 public class AlertsResources {
     
-    @GET
-     @Produces({MediaType.APPLICATION_JSON})
-    @Consumes({MediaType.APPLICATION_JSON})
-    public Response alertValidate(){
-        System.out.println("Hola");
-        return null;
-    }
     @POST    
     @Path("/subscription/set/validate")
     @Produces({MediaType.APPLICATION_JSON+ ";charset=utf-8"})
     @Consumes({MediaType.APPLICATION_JSON + ";charset=utf-8"})
     public Response alertValidate(String cadena,@HeaderParam("authorization") String authString){
+    
     Security scr=new Security();
      if(!scr.isUserAuthenticated(authString)){
             return Response.status(Response.Status.UNAUTHORIZED).build();
      }
         JSONObject jsonRecibido=new JSONObject(cadena);
+        System.out.println("JsonSubscriptionValidate:"+jsonRecibido);
         AlertsDAO dao=new AlertsDAO();
         try{
          String customerId=jsonRecibido.getString("customerId");
@@ -66,8 +59,9 @@ public class AlertsResources {
     Security scr=new Security();
      if(!scr.isUserAuthenticated(authString)){
             return Response.status(Response.Status.UNAUTHORIZED).build();
-     }
+        }
         JSONObject jsonRecibido=new JSONObject(cadena);
+        System.out.println("SubscriptionAlertExecute:"+jsonRecibido);
         AlertsDAO dao=new AlertsDAO();
         try{
          String validationId=jsonRecibido.getString("validationId"); 

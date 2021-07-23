@@ -15,7 +15,7 @@ import java.io.FileReader;
  */
 public class Fichero_Configuraciones {
 
-    String fichero = "configS.txt";
+    String fichero = "configAdvantage.txt";
     String nbd = "";
     String ipbd = "";
 

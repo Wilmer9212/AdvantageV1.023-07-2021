@@ -26,12 +26,12 @@ import org.json.JSONObject;
  public class ProductsResources {
      
      
-   @POST
+    @POST
    @Produces({MediaType.APPLICATION_JSON})
    @Consumes({MediaType.APPLICATION_JSON})
-   public Response getProducts(String cadena,@HeaderParam("authorization") String authString){
+   public Response getProductos(String cadena,@HeaderParam("authorization") String authString){
     Security scr=new Security();
-       System.out.println("Cadena:Productos:::::"+cadena);
+    System.out.println("Cadena:Productos:::::"+cadena);
     System.out.println("Consultando productos....");
      JSONObject jsonr=null;
      String accountType="",property="";
@@ -52,17 +52,58 @@ import org.json.JSONObject;
      JsonArrayBuilder arraycuentas = Json.createArrayBuilder();
      ProductsDAO pr = new ProductsDAO();
      try {
+         System.out.println("dentro del try");
+         System.out.println("accountType:"+accountType);
        List<ProductsDTO> ListaProductos =pr.getProductos(accountType);
+         System.out.println("paso");
        if (ListaProductos != null) {
+           System.out.println("dentro del fort");
          for (int i = 0; i < ListaProductos.size(); i++) {
            JsonObjectBuilder data = Json.createObjectBuilder();
            ProductsDTO prod = ListaProductos.get(i);
            String at=prod.getProducttypename();
+           String value="";
            if(at.contains("TIME")){
                at="TIME";
-           }
+               javax.json.JsonObject responseIversiones = null;
+               if(Integer.parseInt(prod.getIdproducto())==200){
+                   value="30";
+               }
+               if(Integer.parseInt(prod.getIdproducto())==201){
+                   value="60";
+               }
+               if(Integer.parseInt(prod.getIdproducto())==202){
+                   value="90";
+               }
+               if(Integer.parseInt(prod.getIdproducto())==203){
+                   value="180";
+               }
+               responseIversiones = data.add("productCode", prod.getIdproducto())
+                                        .add("accountType", at.toUpperCase())
+                                        .add("description", prod.getDescripcion())
+                                        .add("currencyCode", "MXN")
+                                        .add("frequency",Json.createObjectBuilder()
+                                                             .add("value",value)
+                                                             .add("valueType","integer")
+                                                             .add("isSensitive",false)
+                                                             .build())
+                                        .add("period",Json.createObjectBuilder()
+                                                          .add("value","D")
+                                                          .add("valueType","string")
+                                                          .add("isSensitive",false)
+                                                          .build())
+                                        .add("interestDispositionCode",Json.createObjectBuilder()
+                                                                           .add("value","T")
+                                                                           .add("valueType","string")
+                                                                           .add("isSensitive",false)
+                                                                           .build())
+                                        .build();//.add("frecuency", (JsonValue)Json.createObjectBuilder().add("value", 90).add("valueType", "integer").add("isSensitive", "false").build()).add("period", (JsonValue)Json.createObjectBuilder().add("value", "D").add("valueType", "string").add("isSensitive", "false").build()).build();
+               
+           arraycuentas.add(responseIversiones);
+           }else{
            datosOK = data.add("productCode", prod.getIdproducto()).add("accountType", at.toUpperCase()).add("description", prod.getDescripcion()).add("currencyCode", "MXN").build();//.add("frecuency", (JsonValue)Json.createObjectBuilder().add("value", 90).add("valueType", "integer").add("isSensitive", "false").build()).add("period", (JsonValue)Json.createObjectBuilder().add("value", "D").add("valueType", "string").add("isSensitive", "false").build()).build();
-           arraycuentas.add((JsonValue)datosOK);
+           arraycuentas.add(datosOK);
+           }
          } 
          javax.json.JsonObject Found = Json.createObjectBuilder().add("products", arraycuentas).build();
            System.out.println("Response productos:   \n"+ Found);
@@ -72,8 +113,10 @@ import org.json.JSONObject;
        Not_Found.put("Error", "DATOS NO ENCONTRADOS");
        Response.status(Response.Status.NO_CONTENT).entity(Not_Found).build();
      } catch (Exception e) {
+        pr.cerrar();
        return null;
      } finally {
+         System.out.println("aqui en finally");
        pr.cerrar();
      } 
      return null;
@@ -102,12 +145,17 @@ import org.json.JSONObject;
            productCode=json.getString("productCode");
            amount=json.getInt("amount");
            System.out.println("llego");
-           List<String>lista=dao.Rates(accountType.replace(" ","").trim(),amount,customerId, productCode);
-           javax.json.JsonObject json1=Json.createObjectBuilder().add("interestRate",lista.get(0))
-                                                      .add("maturityDate",lista.get(1))
+           //List<String>lista=dao.Rates(accountType.replace(" ","").trim(),amount,customerId, productCode);
+           boolean ba=dao.productRates(accountType.replace(" ","").trim(),productCode);
+           if(ba){
+               javax.json.JsonObject json1=Json.createObjectBuilder().add("interestRate",7.00)
+                                                      .add("maturityDate","2021-07-05")
                                                       .add("minInitialDepositAmount",1000)
                                                       .build();
-           return Response.status(Response.Status.OK).entity(json1).build();
+               return Response.status(Response.Status.OK).entity(json1).build();
+           }
+           
+           
        } catch (Exception e) {
            System.out.println("Error al construir objeto:"+e.getMessage());
        }

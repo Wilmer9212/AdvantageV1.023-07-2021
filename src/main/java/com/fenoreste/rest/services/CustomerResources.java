@@ -8,7 +8,6 @@ import com.fenoreste.rest.Auth.Security;
  import com.fenoreste.rest.Dao.CustomerDAO;
  import com.github.cliftonlabs.json_simple.JsonArray;
  import com.github.cliftonlabs.json_simple.JsonObject;
-import java.math.BigDecimal;
  import java.util.ArrayList;
  import java.util.Date;
  import java.util.List;
@@ -34,7 +33,7 @@ import javax.ws.rs.HeaderParam;
    @Produces({MediaType.APPLICATION_JSON})
    @Consumes({MediaType.APPLICATION_JSON})
    public Response search(String cadena,@HeaderParam("authorization") String authString){
-       System.out.println("Cadena:"+cadena);
+       System.out.println("Request customer:"+cadena);
        Security scr=new Security();
      if(!scr.isUserAuthenticated(authString)){
             return Response.status(Response.Status.UNAUTHORIZED).build();
@@ -42,9 +41,6 @@ import javax.ws.rs.HeaderParam;
      CustomerDAO datos = new CustomerDAO();
      JsonObject JsonSocios = new JsonObject();
      JsonObject Not_Found = new JsonObject();
-     JSONObject datosEntrada = new JSONObject(cadena);
-     System.out.println("Objeto Json:" + datosEntrada);
-     System.out.println("cadena:" + cadena);
      JSONObject mainObject = new JSONObject(cadena);
      String cif = "";
      for (int i = 0; i < mainObject.length(); i++) {
@@ -59,14 +55,12 @@ import javax.ws.rs.HeaderParam;
        CustomerSearchDTO cliente = null;
        if (lista.size() > 0) {
          JsonSocios.put("customers", lista);
-           System.out.println("Response:"+JsonSocios);
          return Response.status(Response.Status.OK).entity(JsonSocios).build();
        }
-         System.out.println("Socio no encontrado");
        Not_Found.put("title", "socios no encontrados");
        return Response.status(Response.Status.NO_CONTENT).entity(Not_Found.toString()).build();
      } catch (Exception e) {
-         System.out.println("Error generaaaaaaaaaaaaaaaaaal:"+e.getMessage());
+         System.out.println("Error general:"+e.getMessage());
        datos.cerrar();
        return null;
      } finally {
@@ -93,11 +87,12 @@ import javax.ws.rs.HeaderParam;
        CustomerDetailsDTO socio = datos.details(customerId);
        if (socio != null) {
          JsonSocios.put("customer", socio);
-         return Response.status(Response.Status.ACCEPTED).entity(JsonSocios).build();
+         return Response.status(Response.Status.OK).entity(JsonSocios).build();
        } 
        Not_Found.put("Error", "socios no encontrados");
        return Response.status(Response.Status.NO_CONTENT).entity(JsonSocios).build();
      } catch (Exception e) {
+         datos.cerrar();
        return null;
      } finally {
        datos.cerrar();
@@ -110,6 +105,7 @@ import javax.ws.rs.HeaderParam;
    @Consumes({MediaType.APPLICATION_JSON})
    public Response contactDetails(String cadena,@HeaderParam("authorization") String authString){
     Security scr=new Security();
+    System.out.println("Request_cDetails:"+cadena);
      if(!scr.isUserAuthenticated(authString)){
             return Response.status(Response.Status.UNAUTHORIZED).build();
      }
@@ -118,14 +114,11 @@ import javax.ws.rs.HeaderParam;
      JsonObject MiddleContacts = new JsonObject();
      JSONObject datosEntrada = new JSONObject(cadena);
      String ogs = datosEntrada.getString("customerId");
-     System.out.println("Objeto Json:" + datosEntrada);
-     System.out.println("cadena:" + cadena);
      try {
        List<CustomerContactDetailsDTO> listaContacto = datos.ContactDetails(ogs);
        JsonArray json = new JsonArray();
        if (listaContacto.size() > 0) {
          for (int i = 0; i < listaContacto.size(); i++) {
-           System.out.println("entro al fo");
            CustomerContactDetailsDTO dto = listaContacto.get(i);
            JsonObject jsonT = new JsonObject();
            if (dto.getPhoneNumber() != null) {
@@ -134,12 +127,6 @@ import javax.ws.rs.HeaderParam;
              jsonT.put("phoneNumber", dto.getPhoneNumber());
              json.add(jsonT);
            } 
-         /*  if (dto.getCellphoneNumber() != null) {
-             jsonT.put("customerContactId", ogs);
-             jsonT.put("customerContactType", dto.getCustomerContactType());
-             jsonT.put("cellPhone", dto.getCellphoneNumber());
-             json.add(jsonT);
-           }*/ 
            if (dto.getEmail() != null) {
              jsonT.put("customerContactId", ogs);
              jsonT.put("customerContactType", dto.getCustomerContactType());
@@ -155,7 +142,9 @@ import javax.ws.rs.HeaderParam;
      } catch (Exception e) {
        datos.cerrar();
        return null;
-     } 
+     } finally{
+         datos.cerrar();
+     }
    }
    
    @POST
@@ -167,6 +156,7 @@ import javax.ws.rs.HeaderParam;
      if(!scr.isUserAuthenticated(authString)){
             return Response.status(Response.Status.UNAUTHORIZED).build();
      }
+       System.out.println("Cadenaaaaaaa Customer Acounts:"+cadena);
      CustomerDAO datos = new CustomerDAO();
      javax.json.JsonObject datosOK = null;
      JsonArrayBuilder arrayCuentas = Json.createArrayBuilder();
@@ -175,7 +165,6 @@ import javax.ws.rs.HeaderParam;
      try {
        JSONObject mainObject = new JSONObject(cadena);
        String cif = mainObject.getString("customerId");
-       System.out.println("Cif:" + cif);
        List<CustomerAccountDTO> cuentas = datos.Accounts(cif);
        if (cuentas.size() > 0) {
          for (int i = 0; i < cuentas.size(); i++) {
@@ -219,8 +208,7 @@ import javax.ws.rs.HeaderParam;
      jsito.put("valueType", "string");
      jsito.put("value", Integer.valueOf(0));
      try {
-       if (bandera) {
-         System.out.println("Lista:" + lista);           
+       if (bandera) {       
          datosOk.put("templates", lista);
          datosOk.put("property1", jsito);
          return Response.status(Response.Status.OK).entity(datosOk).build();
@@ -251,7 +239,6 @@ import javax.ws.rs.HeaderParam;
      String customerId = datosEntrada.getString("customerId");
      String tel1 = "", tel2 = "";
      try {
-       System.out.println("ObjetoJson:" + datosEntrada);
        JSONArray jsona = datosEntrada.getJSONArray("contactEntities");
        JSONObject json1 = (JSONObject)jsona.get(0);
        JSONObject json2 = (JSONObject)jsona.get(1);
@@ -329,7 +316,6 @@ import javax.ws.rs.HeaderParam;
        JSONArray lista = datosEntrada.getJSONArray("balanceTypes");
        balanceAvalaible = (String)lista.get(0);
        balanceLedger = (String)lista.get(1);
-       System.out.println("Balance:" + balanceAvalaible + "," + balanceLedger);
      } catch (Exception e) {
        datosError.put("Error", "Request Json Failed");
        return Response.status(Response.Status.BAD_GATEWAY).entity(datosError).build();
@@ -375,7 +361,6 @@ import javax.ws.rs.HeaderParam;
        JSONArray lista = datosEntrada.getJSONArray("balanceTypes");
        balanceAvalaible = (String)lista.get(0);
        balanceLedger = (String)lista.get(1);
-       System.out.println("Balance:" + balanceAvalaible + "," + balanceLedger);
        JSONArray filters = datosEntrada.getJSONArray("filters");
        JSONObject f1 = filters.getJSONObject(0);
        JSONObject f2 = filters.getJSONObject(1);

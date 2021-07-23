@@ -18,7 +18,7 @@ import sun.misc.BASE64Decoder;
  */
 public class Security {  
   public boolean isUserAuthenticated(String authString){
-         System.out.println("Aut:"+authString);
+      
         String decodedAuth = "";
         // Header is in the format "Basic 5tyc0uiDat4"
         // We need to extract data before decoding it back to original string
@@ -41,9 +41,6 @@ public class Security {
         String[]cadena =decodedAuth.split(":");
         String user=cadena[0]; 
         String pass=cadena[1];
-        
-               
-        
         if(getUser(user, pass)){
             return true;
         }
@@ -56,12 +53,12 @@ public class Security {
   
     private boolean getUser(String username,String password){
         boolean bandera=false;
-        
         EntityManagerFactory emf=AbstractFacade.conexion();
         EntityManager em=emf.createEntityManager();
         try {            
         
         String consulta="SELECT status FROM user_rest WHERE username='"+username+"' AND password='"+password+"'";
+            System.out.println("consulta:"+consulta);
         Query query=em.createNativeQuery(consulta);
         boolean st=(Boolean) query.getSingleResult();
         if(st){
@@ -70,11 +67,13 @@ public class Security {
             System.out.println("Error en autenticacion");
         }
         } catch (Exception e) {
-            System.out.println("Error en status");
+            System.out.println("Error en status:"+e.getMessage());
             
         }
-        
+        em.close();
+        emf.close();
         return bandera;
         
     }
+    
 }

@@ -6,6 +6,7 @@
 package com.fenoreste.rest.services;
 
 import com.fenoreste.rest.Util.AbstractFacade;
+import com.fenoreste.rest.Util.Hilo1;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import javax.persistence.EntityManager;
@@ -24,14 +25,53 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.math.BigDecimal;
+import javax.json.Json;
+import javax.ws.rs.POST;
+import org.json.JSONObject;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 /**
  *
  * @author Elliot
  */
-@Path("/file")
+@Path("api/file")
  public class FileResources {
-    
+   
+   @POST
+   @Produces({MediaType.APPLICATION_JSON})
+   @Consumes({MediaType.APPLICATION_JSON})
+   public Response fileDownload(String cadena){
+       System.out.println("cadena:"+cadena);
+       JSONObject RequestData=new JSONObject(cadena);
+       String fileId="";
+       try{
+           fileId=RequestData.getString("fileId");           
+       }catch(Exception e){
+           return Response.status(Response.Status.BAD_GATEWAY).entity(e.getMessage()).build();
+       }
+    if(!fileId.equals("")){
+        File file=new File(ruta()+fileId+".pdf");
+        if(file.exists()){
+        Response.ResponseBuilder response = Response.ok(file);
+        response.header("Content-Disposition", "attachment; filename=estado_cuenta_ahorro.pdf");
+       /* Hilo1 mh=new Hilo1("#1",file);
+        Thread nuevoh=new Thread(mh);
+        nuevoh.start();*/
+        return response.build();
+        }else{
+            javax.json.JsonObject jsonError=null;
+            System.out.println("Error Message:No existe el archivo"+fileId);
+            jsonError=Json.createObjectBuilder().add("Error","No existe el archivo que intenta descargar").build();
+            return Response.status(Response.Status.BAD_GATEWAY).entity(jsonError).build();
+        }
+        
+    }
+    return null;
+   }
+   
+   
+   
+   
    @GET
    @Path("/create")
    @Produces({MediaType.APPLICATION_JSON})

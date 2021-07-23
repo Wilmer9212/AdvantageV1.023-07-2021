@@ -30,7 +30,7 @@ public class CardsResources {
     @Produces({MediaType.APPLICATION_JSON})
     @Consumes({MediaType.APPLICATION_JSON})
     public Response linkedAccounts(String cadena,@HeaderParam("authorization") String authString){
-    Security scr=new Security();
+     Security scr=new Security();
      if(!scr.isUserAuthenticated(authString)){
             return Response.status(Response.Status.UNAUTHORIZED).build();
      }

@@ -4,36 +4,18 @@ import com.fenoreste.rest.Auth.Security;
 import com.fenoreste.rest.ResponseDTO.AccountHoldersDTO;
 import com.fenoreste.rest.ResponseDTO.DetailsAccountDTO;
 import com.fenoreste.rest.ResponseDTO.HoldsDTO;
-import com.fenoreste.rest.ResponseDTO.StatementsDTO;
 import com.fenoreste.rest.Dao.AccountsDAO;
 import com.fenoreste.rest.Dao.TransfersDAO;
-import com.fenoreste.rest.Entidades.AuxiliaresD;
 import com.fenoreste.rest.Entidades.transferencias_completadas_siscoop;
-import com.fenoreste.rest.Util.AbstractFacade;
 import com.github.cliftonlabs.json_simple.JsonObject;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
-import java.util.Calendar;
 import java.util.List;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonValue;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Query;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -43,7 +25,6 @@ import javax.ws.rs.core.Response;
 import org.codehaus.jettison.json.JSONException;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.xhtmlrenderer.pdf.ITextRenderer;
 
 @Path("api/account")
 public class AccountsResources {
@@ -53,7 +34,7 @@ public class AccountsResources {
     @Produces({MediaType.APPLICATION_JSON})
     @Consumes({MediaType.APPLICATION_JSON})
     public Response accountHolders(String cadena, @HeaderParam("authorization") String authString) throws JSONException {
-        Security scr = new Security();
+         Security scr = new Security();
         if (!scr.isUserAuthenticated(authString)) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
@@ -70,6 +51,7 @@ public class AccountsResources {
         TransfersDAO dao = new TransfersDAO();
         String msj = "";
         try {
+            
             listaHolders = dao.accountHolders(accountId);
             jsonb.put("holders", listaHolders);
             return Response.status(Response.Status.OK).entity(jsonb).build();
@@ -87,7 +69,9 @@ public class AccountsResources {
     @Produces({MediaType.APPLICATION_JSON})
     @Consumes({MediaType.APPLICATION_JSON})
     public Response validateInternalAccount(String cadena, @HeaderParam("authorization") String authString) {
-        Security scr = new Security();
+         Security scr = new Security();
+        
+        System.out.println("Request cadenaaaaaaaaaaaaaaaa internal validate:"+cadena);
         if (!scr.isUserAuthenticated(authString)) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
@@ -98,12 +82,20 @@ public class AccountsResources {
             JSONObject jsonRecibido = new JSONObject(cadena);
             System.out.println("JsonRecibido:" + jsonRecibido);
             accountId = jsonRecibido.getString("accountNumber");
+            if(accountId.equals("053472372372")){
+                
+            }else{
             int p = Integer.parseInt(accountId.substring(6, 11));
             List<AccountHoldersDTO> listaHolder = acDao.validateInternalAccount(accountId);
             AccountHoldersDTO holder = listaHolder.get(0);
             javax.json.JsonObject create = null;
-            create = Json.createObjectBuilder().add("accountId", accountId).add("productType", acDao.accountType(p).toUpperCase()).add("holders", Json.createArrayBuilder().add((JsonValue) Json.createObjectBuilder().add("name", holder.getName()).add("relationCode", holder.getRelationCode()).build())).build();
+            create = Json.createObjectBuilder().add("accountId", accountId).add("accountType", acDao.accountType(p).toUpperCase()).add("holders", Json.createArrayBuilder().add((JsonValue) Json.createObjectBuilder().add("customerId","01010110021543").add("name", holder.getName()).add("relationCode", holder.getRelationCode()).build())).add("displayAccountNumber","*******510").build();
             return Response.status(Response.Status.OK).entity(create).build();
+             
+            }
+            
+        
+         
         } catch (Exception e) {
             System.out.println("Error al obtener objetos Json:" + e.getMessage());
         } finally {
@@ -117,6 +109,7 @@ public class AccountsResources {
     @Produces({MediaType.APPLICATION_JSON})
     @Consumes({MediaType.APPLICATION_JSON})
     public Response statements(String cadena, @HeaderParam("authorization") String authString) {
+          
         Security scr = new Security();
         System.out.println("cadena:"+cadena);
         if (!scr.isUserAuthenticated(authString)) {
@@ -130,10 +123,9 @@ public class AccountsResources {
             JSONObject jsonRecibido = new JSONObject(cadena);
             JSONArray listaFil = jsonRecibido.getJSONArray("filters");
             System.out.println("ListaFil:" + listaFil);
+            System.out.println("Cadenaaaaa:"+cadena);
             String id = "";
             String fd = "";
-            pageStartIndex = jsonRecibido.getInt("page");
-            pageSize = jsonRecibido.getInt("pageSize");
             for (int i = 0; i < listaFil.length(); i++) {
                 JSONObject js = (JSONObject) listaFil.get(0);
                 JSONObject js1 = (JSONObject) listaFil.get(1);
@@ -166,7 +158,7 @@ public class AccountsResources {
     @Produces({MediaType.APPLICATION_JSON})
     @Consumes({MediaType.APPLICATION_JSON})
     public Response Holds(String cadena, @HeaderParam("authorization") String authString) {
-        Security scr = new Security();
+         Security scr = new Security();
         if (!scr.isUserAuthenticated(authString)) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
@@ -203,7 +195,7 @@ public class AccountsResources {
     @Produces({MediaType.APPLICATION_JSON})
     @Consumes({MediaType.APPLICATION_JSON})
     public Response History(String cadena, @HeaderParam("authorization") String authString) {
-        Security scr = new Security();
+         Security scr = new Security();
         if (!scr.isUserAuthenticated(authString)) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
@@ -227,19 +219,32 @@ public class AccountsResources {
                 System.out.println("id:" + initialDate + ",fd:" + finalDate);
             }
             List<transferencias_completadas_siscoop> lista = dao.History(accountId, initialDate, finalDate, pageSize, pageStartIndex);
-            System.out.println("Lista:" + lista);
             JsonObject create = null;
             JsonArrayBuilder listaJson = Json.createArrayBuilder();
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
             String fe = "";
             for (int j = 0; j < lista.size(); j++) {
                 transferencias_completadas_siscoop dto = lista.get(j);
+                System.out.println("dto:"+dto);
                 fe = sdf.format(dto.getFechaejecucion()).replace("/","-");
                 ZonedDateTime zonedDateTime = ZonedDateTime.parse(fe+"T00:00:00.000-07:00");
-                String feR = String.valueOf(zonedDateTime); 
+                String feR = String.valueOf(zonedDateTime);
+                System.out.println("DTOCtaOrigen:"+dto.getCuentaorigen());
+                int o=Integer.parseInt(dto.getCuentaorigen().substring(0,6));
+                int p=Integer.parseInt(dto.getCuentaorigen().substring(6,11));
+                int a=Integer.parseInt(dto.getCuentaorigen().substring(11,19));
                 
-                System.out.println("Fer:"+feR);
-                javax.json.JsonObject jsi = Json.createObjectBuilder().add("transactionId", String.valueOf(dto.getId())).add("amount", (JsonValue) Json.createObjectBuilder().add("amount", dto.getMonto().intValue()).add("currencyCode", "MXN").build()).add("postingDate",feR).add("valueDate", fe.replace("/","-")).add("runningBalance", (JsonValue) Json.createObjectBuilder().add("amount", 0).add("currencyCode", "MXN").build()).add("description", dto.getComentario1()).add("originatorReferenceId", String.valueOf(dto.getId())).add("originatorCode", String.valueOf(dto.getId())).add("description2", (JsonValue) Json.createObjectBuilder().add("value",String.valueOf(dto.getId())).add("valueType", "string").add("isSensitive",false).build()).build();
+                int o1=Integer.parseInt(accountId.substring(0,6));
+                int p1=Integer.parseInt(accountId.substring(6,11));
+                int a1=Integer.parseInt(accountId.substring(11,19));
+                int co=o+p+a;
+                int co1=o1+p1+a1;             
+                if(co==co1){
+                    dto.setMonto(-dto.getMonto());
+                }else{
+                    dto.setMonto(dto.getMonto());
+                }
+                javax.json.JsonObject jsi = Json.createObjectBuilder().add("transactionId", String.valueOf(dto.getId())).add("amount",Json.createObjectBuilder().add("amount", dto.getMonto()).add("currencyCode", "MXN").build()).add("postingDate",feR).add("valueDate", fe.replace("/","-")).add("runningBalance",Json.createObjectBuilder().add("amount", dto.getRunningBalance()).add("currencyCode", "MXN").build()).add("description", dto.getComentario1()).add("originatorReferenceId", String.valueOf(dto.getId())).add("originatorCode", String.valueOf(dto.getId())).add("description2",Json.createObjectBuilder().add("value",String.valueOf(dto.getId())).add("valueType", "string").add("isSensitive",false).build()).build();
                 listaJson.add((JsonValue) jsi);
             }
             javax.json.JsonObject Found = Json.createObjectBuilder().add("totalRecords", lista.size()).add("queryId", "").add("transactions", listaJson).build();
@@ -360,7 +365,7 @@ public class AccountsResources {
     @Produces({MediaType.APPLICATION_JSON})
     @Consumes({MediaType.APPLICATION_JSON})
     public Response changeStatus(String cadena, @HeaderParam("authorization") String authString) {
-        Security scr = new Security();
+         Security scr = new Security();
         if (!scr.isUserAuthenticated(authString)) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
@@ -379,7 +384,7 @@ public class AccountsResources {
     @Produces({MediaType.APPLICATION_JSON})
     @Consumes({MediaType.APPLICATION_JSON})
     public Response changeStatusExecute(String cadena, @HeaderParam("authorization") String authString) {
-        Security scr = new Security();
+         Security scr = new Security();
         if (!scr.isUserAuthenticated(authString)) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
@@ -393,101 +398,5 @@ public class AccountsResources {
         return Response.status(Response.Status.OK).entity(json).build();
     }
 
-    @POST
-    @Path("/validateBeneficiary")
-    @Produces({MediaType.APPLICATION_JSON})
-    @Consumes({MediaType.APPLICATION_JSON})
-    public Response validateBeneficiary(String cadena, @HeaderParam("authorization") String authString) {
-        Security scr = new Security();
-        if (!scr.isUserAuthenticated(authString)) {
-            return Response.status(Response.Status.UNAUTHORIZED).build();
-        }
-        AccountsDAO acDao = new AccountsDAO();
-        String accountId = "";
-        System.out.println("Cadena:" + cadena);
-        String accountType = "";
-        String nameb = "";
-        String address = "";
-        try {
-            JSONObject jsonRecibido = new JSONObject(cadena);
-            System.out.println("JsonRecibido:" + jsonRecibido);
-            JSONObject json2 = jsonRecibido.getJSONObject("beneficiaryAccount");
-            JSONObject json3 = jsonRecibido.getJSONObject("beneficiary");
-            accountId = json2.getString("accountNumber");
-            int p = Integer.parseInt(accountId.substring(6, 11));
-            accountType = json2.getString("accountType");
-            nameb = json3.getString("name");
-            address = json3.getString("address");
-            System.out.println("json2:" + json2);
-            System.out.println("AccountNumber:" + accountId + "\n accounType:" + accountType + "\n name:" + nameb + "\n address:" + address);
-            List<String> lista = acDao.validateBeneficiary(accountId, accountType.toUpperCase(), nameb.toUpperCase(), address.toUpperCase());
-            javax.json.JsonObject create = null;
-            create = Json.createObjectBuilder().add("beneficiaryAccount", (JsonValue) Json.createObjectBuilder().add("accountNumber", lista.get(2)).add("accountType", lista.get(1)).add("accountSchemaType", "internal").build()).add("beneficiary", (JsonValue) Json.createObjectBuilder().add("name", lista.get(0)).add("countryCode", "MX").build()).build();
-            return Response.status(Response.Status.OK).entity(create).build();
-        } catch (Exception e) {
-            System.out.println("Error al obtener objetos Json:" + e.getMessage());
-        } finally {
-            acDao.cerrar();
-        }
-        return null;
-    }
-
-    @GET
-    @Path("/currentBusinessDate")
-    @Produces({MediaType.APPLICATION_JSON})
-    @Consumes({MediaType.APPLICATION_JSON})
-    public Response BussinesDate(@HeaderParam("authorization") String authString) {
-        Security scr = new Security();
-        if (!scr.isUserAuthenticated(authString)) {
-            return Response.status(Response.Status.UNAUTHORIZED).build();
-        }
-        Calendar c1 = Calendar.getInstance();
-        String dia = Integer.toString(c1.get(5));
-        String mes = Integer.toString(c1.get(2) + 1);
-        String annio = Integer.toString(c1.get(1));
-        String BusinessDate = dia + "/" + mes + "/" + annio;
-        JsonObject json = new JsonObject();
-        json.put("currentBusinessDate", BusinessDate);
-        return Response.status(Response.Status.OK).entity(json).build();
-    }
-
-    @POST
-    @Path("/file")
-    @Produces({MediaType.APPLICATION_JSON})
-    @Consumes({MediaType.APPLICATION_JSON})
-    public Response file(String cadena) throws FileNotFoundException {
-        /*String opa="",fechaInit="",fechaFin="";
-        JSONObject jsonRequest=new JSONObject(cadena);
-        try{
-            opa=jsonRequest.getString("accountId");
-            fechaInit=jsonRequest.getString("initialDate");
-            fechaFin=jsonRequest.getString("finalDate");            
-        }catch(Exception e){
-            System.out.println("Error al obtener datos json:"+e.getMessage());
-        }
-        
-         File file=null;
-        try{
-        file = crear_llenar_txt(opa, fechaInit,fechaFin);
-        //file=new File(ruta()+"e_cuenta_ahorro_0101010011000010667_2.txt");
-        System.out.println("fileNameTxt:"+file.getName());
-        File fileTxt=new File(ruta()+file.getName());
-        if(fileTxt.exists()){
-        File fileHTML= crear_llenar_html(fileTxt,fileTxt.getName().replace(".txt",".html"));  
-        if(crearPDF(ruta(),fileHTML.getName())){
-            String pdf=ruta()+fileHTML.getName().replace(".html","pdf");
-            fileTxt.delete();
-            fileHTML.delete();              
-        }  
-        }
-        }catch(Exception e){
-            System.out.println("Error en conver:"+e.getMessage()); 
-        }
-        
-        Response.ResponseBuilder response = Response.ok(file);
-        response.header("Content-Disposition", "attachment; filename=cv.pdf");
-        return response.build();*/
-        return null;
-    }
-
+   
 }

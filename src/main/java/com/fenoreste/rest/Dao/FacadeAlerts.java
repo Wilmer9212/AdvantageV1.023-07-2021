@@ -71,16 +71,12 @@ public abstract class FacadeAlerts<T> {
         boolean bandera=false;
         try {
         Calendar c1 = Calendar.getInstance();
-        String dia = Integer.toString(c1.get(Calendar.DATE));
-        String mes = Integer.toString(c1.get(Calendar.MONTH) + 1);
-        String annio = Integer.toString(c1.get(Calendar.YEAR));
-        
-        Query query1=em.createNativeQuery("SELECT * FROM v_alertas WHERE validationid='"+validationId+"'",v_Alertas.class);
+        String consulta="SELECT * FROM v_alertas WHERE validationid='"+validationId+"'";
+        Query query1=em.createNativeQuery(consulta,v_Alertas.class);
         v_Alertas va=(v_Alertas) query1.getSingleResult();
         Query queryf = em.createNativeQuery("SELECT date(now())");
         String fe = String.valueOf(queryf.getSingleResult());
         Date hoy = stringToDate(fe.replace("-","/"));
-        System.out.println("aqui"); 
                         EntityTransaction tr = em.getTransaction();
                         tr.begin();
                         e_Alerts vl = new e_Alerts();
@@ -91,16 +87,16 @@ public abstract class FacadeAlerts<T> {
                         em.persist(vl);
                         tr.commit();
                         bandera = true;
-                    
+                    System.out.println("Bandera:"+bandera);
          if(bandera){
-             return "accepted";
+             return "completed";
          }else{
              return "rejected";
          }
         } catch (Exception e) {
             System.out.println("Error al ejecutar:" + e.getMessage());
         }
-       return null;
+       return "Fail";
     }
 
     
